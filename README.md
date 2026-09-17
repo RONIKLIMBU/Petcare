@@ -8,7 +8,11 @@ A modern, native Android application designed for pet parents to manage pet prof
 
 You can download and install the latest APK directly using any of the following methods:
 
-### 1. Direct APK Download (GitHub Releases)
+### 1. Instant Direct Download (From Repository)
+The pre-compiled APK is included directly inside this repository:
+👉 **[Download releases/PetCare-debug.apk](releases/PetCare-debug.apk?raw=true)** (Click **View raw** or **Download raw file** on GitHub)
+
+### 2. Direct APK Download (GitHub Releases)
 Whenever a release or tag is published in this repository, the pre-built `.apk` file is attached directly under **Releases**:
 👉 **[Go to GitHub Releases](../../releases/latest)** to download `app-debug.apk`.
 
