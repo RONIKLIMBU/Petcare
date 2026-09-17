@@ -1,0 +1,72 @@
+name: Build & Release Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant Execute Permission to Gradle
+        run: chmod +x gradlew || true
+
+      - name: Decode Debug Keystore
+        run: |
+          if [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          fi
+
+      - name: Build Debug APK
+        run: |
+          if [ -f gradlew ]; then
+            ./gradlew assembleDebug --stacktrace
+          else
+            gradle assembleDebug --stacktrace
+          fi
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PetCare-Debug-APK
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/outputs/apk/debug/*.apk
+          tag_name: ${{ github.ref_name || 'latest' }}
+          name: PetCare Android App Release
+          body: |
+            ## 🐾 PetCare Android App - Latest APK
+
+            Download the attached `app-debug.apk` below and install it directly on your Android device!
+
+            ### What's Inside
+            - Complete Pet Management & Health Tracking
+            - Daily Routines & Care Tasks (Swipe to complete, Shake to reset)
+            - SMS Delegation: Instant formatted care routines to pet sitters
+          draft: false
+          prerelease: false
