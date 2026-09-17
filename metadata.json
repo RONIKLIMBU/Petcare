@@ -1,0 +1,6 @@
+{
+  "name": "PetCare",
+  "description": "Native Android app for managing pet routines, care tasks with gesture controls, shake to reset, and SMS delegation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

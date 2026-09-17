@@ -1,0 +1,83 @@
+<resources>
+    <string name="app_name">PetCare</string>
+    <string name="app_tagline">Your Pet Routine &amp; Care Companion</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_pets">Pets</string>
+    <string name="nav_routines">Routines</string>
+    <string name="nav_sms">SMS Share</string>
+
+    <!-- Auth -->
+    <string name="auth_welcome_title">Welcome to PetCare</string>
+    <string name="auth_login_subtitle">Sign in to manage your pets and routines</string>
+    <string name="auth_register_subtitle">Create an account to get started</string>
+    <string name="auth_username">Username</string>
+    <string name="auth_email">Email Address</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_login_button">Sign In</string>
+    <string name="auth_register_button">Create Account</string>
+    <string name="auth_to_register">Don\'t have an account? Sign Up</string>
+    <string name="auth_to_login">Already have an account? Sign In</string>
+    <string name="auth_logout">Log Out</string>
+    <string name="auth_error_empty">Please fill in all required fields</string>
+    <string name="auth_error_invalid_credentials">Invalid username or password</string>
+    <string name="auth_error_user_exists">Username or email already exists</string>
+    <string name="auth_success_register">Account created! Please sign in.</string>
+
+    <!-- Home -->
+    <string name="home_greeting">Hello, %1$s!</string>
+    <string name="home_pets_header">My Pets</string>
+    <string name="home_tasks_header">Today\'s Care Checklist</string>
+    <string name="home_shake_hint">Shake device anytime to reset all tasks for today</string>
+    <string name="home_swipe_hint">Swipe right to complete • Swipe left to delete</string>
+    <string name="home_no_tasks">No care tasks scheduled yet</string>
+    <string name="home_no_pets">No pets added yet. Add your first companion!</string>
+    <string name="home_stats_completed">%1$d of %2$d completed</string>
+
+    <!-- Pets -->
+    <string name="pets_title">My Furry &amp; Feathered Friends</string>
+    <string name="pets_add_pet">Add Pet</string>
+    <string name="pets_edit_pet">Edit Pet</string>
+    <string name="pets_name">Pet Name</string>
+    <string name="pets_species">Species (Dog, Cat, Bird, etc.)</string>
+    <string name="pets_breed">Breed</string>
+    <string name="pets_age">Age (years)</string>
+    <string name="pets_weight">Weight (kg)</string>
+    <string name="pets_delete_confirm">Are you sure you want to delete this pet and all associated care routines?</string>
+    <string name="pets_age_format">%1$d yrs old</string>
+    <string name="pets_weight_format">%1$.1f kg</string>
+
+    <!-- Routines / Care Tasks -->
+    <string name="routines_title">Care Routines</string>
+    <string name="routines_add_task">Add Care Routine</string>
+    <string name="routines_edit_task">Edit Care Routine</string>
+    <string name="routines_task_name">Task Name</string>
+    <string name="routines_category">Category</string>
+    <string name="routines_time">Schedule Time (e.g. 08:00 AM)</string>
+    <string name="routines_notes">Notes / Special Instructions</string>
+    <string name="routines_select_pet">Select Pet</string>
+    <string name="routines_filter_all">All Pets</string>
+    <string name="routines_deleted">Care routine deleted</string>
+    <string name="routines_completed">Task marked as completed!</string>
+    <string name="routines_reset_all">All tasks reset to uncompleted!</string>
+    <string name="routines_undo">Undo</string>
+
+    <!-- SMS Delegation -->
+    <string name="sms_title">SMS Routine Delegation</string>
+    <string name="sms_subtitle">Send your pet\'s daily routine, feeding schedule, and medication instructions to a pet sitter, family member, or walker.</string>
+    <string name="sms_select_pet">Select Pet to Delegate</string>
+    <string name="sms_phone_number">Contact Phone Number</string>
+    <string name="sms_preview_label">Routine Message Preview</string>
+    <string name="sms_send_direct">Send SMS (Direct)</string>
+    <string name="sms_send_app">Open in Messages App</string>
+    <string name="sms_success">Routine sent successfully via SMS!</string>
+    <string name="sms_permission_needed">SMS permission is required to send messages directly</string>
+    <string name="sms_empty_number">Please enter a valid phone number</string>
+
+    <!-- General -->
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+</resources>
