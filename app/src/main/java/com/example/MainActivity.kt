@@ -8,8 +8,13 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.View
+import android.view.ViewGroup
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -37,10 +42,12 @@ class MainActivity : AppCompatActivity() {
     private var shakeDetector: ShakeDetector? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setupWindowInsets()
         setupToolbar()
         setupBottomNavigation()
         setupShakeDetector()
@@ -49,6 +56,7 @@ class MainActivity : AppCompatActivity() {
         val sessionManager = (application as PetCareApplication).sessionManager
         if (savedInstanceState == null) {
             if (sessionManager.isLoggedIn()) {
+                petCareViewModel.refreshUserSession()
                 showMainApp()
             } else {
                 showAuthScreen()
@@ -56,6 +64,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             // Restore visibility state
             if (sessionManager.isLoggedIn()) {
+                petCareViewModel.refreshUserSession()
                 binding.bottomNav.visibility = View.VISIBLE
             } else {
                 binding.bottomNav.visibility = View.GONE
@@ -142,13 +151,58 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupWindowInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.coordinatorLayout) { _, windowInsets ->
+            val systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val ime = windowInsets.getInsets(WindowInsetsCompat.Type.ime())
+
+            // Padding top of AppBarLayout so the toolbar is below the status bar
+            binding.appBarLayout.updatePadding(top = systemBars.top)
+
+            // Padding bottom of BottomNavigationView so items are above the gesture navigation bar
+            if (binding.bottomNav.visibility == View.VISIBLE) {
+                binding.bottomNav.updatePadding(bottom = systemBars.bottom)
+            } else {
+                binding.bottomNav.updatePadding(bottom = 0)
+            }
+
+            // Adjust fragmentContainer bottom margin so it doesn't overlap bottomNav or keyboard
+            val isBottomNavVisible = binding.bottomNav.visibility == View.VISIBLE
+            val bottomNavMeasuredHeight = if (isBottomNavVisible) {
+                if (binding.bottomNav.height > 0) {
+                    binding.bottomNav.height
+                } else {
+                    (80 * resources.displayMetrics.density).toInt()
+                }
+            } else {
+                0
+            }
+
+            val requiredBottom = if (ime.bottom > 0) {
+                ime.bottom
+            } else {
+                bottomNavMeasuredHeight
+            }
+
+            val lp = binding.fragmentContainer.layoutParams as? ViewGroup.MarginLayoutParams
+            if (lp != null && lp.bottomMargin != requiredBottom) {
+                lp.bottomMargin = requiredBottom
+                binding.fragmentContainer.layoutParams = lp
+            }
+
+            windowInsets
+        }
+    }
+
     private fun observeEvents() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 petCareViewModel.eventFlow.collect { message ->
-                    Snackbar.make(binding.coordinatorLayout, message, Snackbar.LENGTH_SHORT)
-                        .setAnchorView(binding.bottomNav)
-                        .show()
+                    val snackbar = Snackbar.make(binding.coordinatorLayout, message, Snackbar.LENGTH_SHORT)
+                    if (binding.bottomNav.visibility == View.VISIBLE) {
+                        snackbar.anchorView = binding.bottomNav
+                    }
+                    snackbar.show()
                 }
             }
         }
@@ -166,6 +220,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onUserAuthenticated() {
+        petCareViewModel.refreshUserSession()
         showMainApp()
     }
 
@@ -180,6 +235,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun showAuthScreen() {
         binding.bottomNav.visibility = View.GONE
+        updateContainerMargin(0)
+        ViewCompat.requestApplyInsets(binding.coordinatorLayout)
         binding.topAppBar.title = getString(R.string.app_name)
         binding.topAppBar.menu.findItem(R.id.action_logout)?.isVisible = false
         binding.topAppBar.menu.findItem(R.id.action_shake_reset)?.isVisible = false
@@ -188,9 +245,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun showMainApp() {
         binding.bottomNav.visibility = View.VISIBLE
+        ViewCompat.requestApplyInsets(binding.coordinatorLayout)
         binding.topAppBar.menu.findItem(R.id.action_logout)?.isVisible = true
         binding.topAppBar.menu.findItem(R.id.action_shake_reset)?.isVisible = true
         binding.bottomNav.selectedItemId = R.id.nav_home
+    }
+
+    private fun updateContainerMargin(bottomMargin: Int) {
+        val lp = binding.fragmentContainer.layoutParams as? ViewGroup.MarginLayoutParams ?: return
+        if (lp.bottomMargin != bottomMargin) {
+            lp.bottomMargin = bottomMargin
+            binding.fragmentContainer.layoutParams = lp
+        }
     }
 
     private fun replaceFragment(fragment: Fragment, tag: String) {

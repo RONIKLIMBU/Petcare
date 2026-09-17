@@ -42,7 +42,23 @@ class AuthFragment : Fragment() {
 
         setupModeToggle()
         setupSubmitButton()
+        setupDemoButton()
         observeViewModel()
+    }
+
+    private fun setupDemoButton() {
+        binding.btnQuickDemo.setOnClickListener {
+            binding.toggleAuthMode.check(R.id.btnTabLogin)
+            binding.etUsername.setText("demo")
+            binding.etPassword.setText("demo123")
+            authViewModel.login("demo", "demo123")
+        }
+
+        binding.tvDemoHint.setOnClickListener {
+            binding.toggleAuthMode.check(R.id.btnTabLogin)
+            binding.etUsername.setText("demo")
+            binding.etPassword.setText("demo123")
+        }
     }
 
     private fun setupModeToggle() {

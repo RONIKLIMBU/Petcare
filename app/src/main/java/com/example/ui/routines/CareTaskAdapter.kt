@@ -83,6 +83,10 @@ class CareTaskAdapter(
                 onToggleCompletion(task)
             }
 
+            binding.root.setOnClickListener {
+                onEditTask(item)
+            }
+
             binding.btnEditTask.setOnClickListener {
                 onEditTask(item)
             }

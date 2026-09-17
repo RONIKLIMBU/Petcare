@@ -128,7 +128,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="24dp"
-                    app:passwordToggleEnabled="true"
+                    app:endIconMode="password_toggle"
                     android:hint="@string/auth_password">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -150,6 +150,19 @@
                     app:cornerRadius="14dp"
                     android:backgroundTint="@color/primary" />
 
+                <!-- Demo Action Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnQuickDemo"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="12dp"
+                    android:text="One-Tap Demo Sign In (Buddy &amp; Luna)"
+                    android:textSize="14sp"
+                    app:icon="@drawable/ic_paw"
+                    app:iconGravity="textStart"
+                    app:cornerRadius="14dp" />
+
                 <!-- Progress indicator -->
                 <ProgressBar
                     android:id="@+id/progressBar"
@@ -169,7 +182,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Demo Account: username: demo | password: demo123"
+            android:text="Demo Account: username: demo | password: demo123 (Tap to fill)"
             android:textColor="@color/outline"
             android:textSize="12sp" />
 

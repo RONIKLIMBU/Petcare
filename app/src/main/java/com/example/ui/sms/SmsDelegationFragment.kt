@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -15,6 +14,8 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.MainActivity
 import com.example.PetCareApplication
 import com.example.R
 import com.example.data.local.entity.PetEntity
@@ -22,6 +23,7 @@ import com.example.databinding.FragmentSmsDelegationBinding
 import com.example.ui.viewmodel.PetCareViewModel
 import com.example.ui.viewmodel.ViewModelFactory
 import com.example.util.SmsHelper
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 class SmsDelegationFragment : Fragment() {
@@ -33,6 +35,7 @@ class SmsDelegationFragment : Fragment() {
         ViewModelFactory(requireActivity().application as PetCareApplication)
     }
 
+    private lateinit var petSelectorAdapter: PetSelectorAdapter
     private var petList: List<PetEntity> = emptyList()
     private var selectedPet: PetEntity? = null
     private var formattedMessageText: String = ""
@@ -62,16 +65,28 @@ class SmsDelegationFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupPetSelector()
         setupListeners()
         observePets()
     }
 
+    private fun setupPetSelector() {
+        petSelectorAdapter = PetSelectorAdapter { pet ->
+            selectPet(pet)
+        }
+        binding.rvPetSelector.apply {
+            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            adapter = petSelectorAdapter
+        }
+    }
+
     private fun setupListeners() {
-        binding.actvSelectPet.setOnItemClickListener { _, _, position, _ ->
-            if (position in petList.indices) {
-                selectedPet = petList[position]
-                generatePreview()
-            }
+        binding.btnSwitchPetDialog.setOnClickListener {
+            showPetSelectionDialog()
+        }
+
+        binding.btnAddPetNow.setOnClickListener {
+            (activity as? MainActivity)?.navigateToPets()
         }
 
         binding.btnSendDirectSms.setOnClickListener {
@@ -108,23 +123,56 @@ class SmsDelegationFragment : Fragment() {
         }
     }
 
+    private fun showPetSelectionDialog() {
+        if (petList.isEmpty()) return
+        val petNames = petList.map { "${it.name} (${it.species})" }.toTypedArray()
+        val currentIndex = petList.indexOfFirst { it.petId == selectedPet?.petId }.coerceAtLeast(0)
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.sms_select_pet)
+            .setSingleChoiceItems(petNames, currentIndex) { dialog, which ->
+                if (which in petList.indices) {
+                    selectPet(petList[which])
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
     private fun observePets() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.pets.collect { pets ->
                     petList = pets
-                    val petNames = pets.map { "${it.name} (${it.species})" }
-                    val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, petNames)
-                    binding.actvSelectPet.setAdapter(adapter)
 
-                    if (pets.isNotEmpty() && selectedPet == null) {
-                        selectedPet = pets[0]
-                        binding.actvSelectPet.setText(petNames[0], false)
+                    if (pets.isEmpty()) {
+                        selectedPet = null
+                        formattedMessageText = ""
+                        binding.cardNoPets.visibility = View.VISIBLE
+                        binding.llPetSelectorSection.visibility = View.GONE
+                        binding.tvMessagePreview.text = "No pets available. Please add a pet in the Pets tab first."
+                        petSelectorAdapter.submitList(emptyList(), null)
+                    } else {
+                        binding.cardNoPets.visibility = View.GONE
+                        binding.llPetSelectorSection.visibility = View.VISIBLE
+                        binding.btnSwitchPetDialog.visibility = if (pets.size > 1) View.VISIBLE else View.GONE
+
+                        val current = selectedPet
+                        val targetPet = pets.find { it.petId == current?.petId } ?: pets[0]
+                        selectedPet = targetPet
+                        petSelectorAdapter.submitList(pets, targetPet.petId)
                         generatePreview()
                     }
                 }
             }
         }
+    }
+
+    private fun selectPet(pet: PetEntity) {
+        selectedPet = pet
+        petSelectorAdapter.setSelected(pet.petId)
+        generatePreview()
     }
 
     private fun generatePreview() {
@@ -163,3 +211,4 @@ class SmsDelegationFragment : Fragment() {
         _binding = null
     }
 }
+

@@ -16,7 +16,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -25,28 +27,50 @@ class PetCareViewModel(
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
-    val currentUserId: Long get() = sessionManager.getUserId()
-    val currentUsername: String get() = sessionManager.getUsername()
+    // Reactive user session state
+    private val _userIdFlow = MutableStateFlow(sessionManager.getUserId())
+    val userIdFlow: StateFlow<Long> = _userIdFlow.asStateFlow()
 
-    // Pets stream
-    val pets: StateFlow<List<PetEntity>> = repository.getPetsForOwner(currentUserId)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    private val _userNameFlow = MutableStateFlow(sessionManager.getUsername())
+    val userNameFlow: StateFlow<String> = _userNameFlow.asStateFlow()
+
+    val currentUserId: Long get() = _userIdFlow.value
+    val currentUsername: String get() = _userNameFlow.value
+
+    fun refreshUserSession() {
+        _userIdFlow.value = sessionManager.getUserId()
+        _userNameFlow.value = sessionManager.getUsername()
+    }
 
     // Filter by pet ID (null = show all)
     private val _selectedPetFilter = MutableStateFlow<Long?>(null)
     val selectedPetFilter: StateFlow<Long?> = _selectedPetFilter.asStateFlow()
 
-    // Tasks stream based on filter
+    // Pets stream dynamically driven by active user
     @OptIn(ExperimentalCoroutinesApi::class)
-    val tasks: StateFlow<List<CareTaskWithPet>> = _selectedPetFilter.flatMapLatest { petId ->
-        if (petId == null) {
-            repository.getAllTasksForOwner(currentUserId)
+    val pets: StateFlow<List<PetEntity>> = _userIdFlow.flatMapLatest { userId ->
+        if (userId <= 0L) {
+            flowOf(emptyList())
         } else {
-            repository.getTasksForPetAndOwner(currentUserId, petId)
+            repository.getPetsForOwner(userId)
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    // Tasks stream driven by active user and selected pet filter
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val tasks: StateFlow<List<CareTaskWithPet>> = combine(_userIdFlow, _selectedPetFilter) { userId, petId ->
+        Pair(userId, petId)
+    }.flatMapLatest { (userId, petId) ->
+        if (userId <= 0L) {
+            flowOf(emptyList())
+        } else if (petId == null) {
+            repository.getAllTasksForOwner(userId)
+        } else {
+            repository.getTasksForPetAndOwner(userId, petId)
         }
     }.stateIn(
         scope = viewModelScope,
@@ -68,94 +92,149 @@ class PetCareViewModel(
     // --- Pet CRUD ---
 
     fun addPet(name: String, species: String, breed: String, age: Int, weight: Double) {
-        if (name.isBlank() || species.isBlank()) return
+        val trimmedName = name.trim()
+        val trimmedSpecies = species.trim()
+        if (trimmedName.isBlank() || trimmedSpecies.isBlank()) return
+
+        val ownerId = sessionManager.getUserId()
+        if (ownerId <= 0L) {
+            viewModelScope.launch {
+                _eventFlow.emit("Please sign in before adding a pet.")
+            }
+            return
+        }
+
         viewModelScope.launch {
-            val pet = PetEntity(
-                ownerId = currentUserId,
-                name = name.trim(),
-                species = species.trim(),
-                breed = breed.trim(),
-                age = age,
-                weight = weight
-            )
-            repository.insertPet(pet)
-            _eventFlow.emit("Added ${pet.name} successfully!")
+            try {
+                val pet = PetEntity(
+                    ownerId = ownerId,
+                    name = trimmedName,
+                    species = trimmedSpecies,
+                    breed = breed.trim(),
+                    age = age,
+                    weight = weight
+                )
+                repository.insertPet(pet)
+                _userIdFlow.value = ownerId // trigger emission refresh
+                _eventFlow.emit("Added ${pet.name} successfully!")
+            } catch (e: Exception) {
+                _eventFlow.emit("Failed to add pet: ${e.message}")
+            }
         }
     }
 
     fun updatePet(pet: PetEntity) {
         viewModelScope.launch {
-            repository.updatePet(pet)
-            _eventFlow.emit("Updated ${pet.name}")
+            try {
+                repository.updatePet(pet)
+                _eventFlow.emit("Updated ${pet.name}")
+            } catch (e: Exception) {
+                _eventFlow.emit("Failed to update pet: ${e.message}")
+            }
         }
     }
 
     fun deletePet(pet: PetEntity) {
         viewModelScope.launch {
-            repository.deletePet(pet)
-            _eventFlow.emit("Removed ${pet.name}")
+            try {
+                repository.deletePet(pet)
+                _eventFlow.emit("Removed ${pet.name}")
+            } catch (e: Exception) {
+                _eventFlow.emit("Failed to delete pet: ${e.message}")
+            }
         }
     }
 
     // --- Care Task CRUD ---
 
     fun addTask(petId: Long, name: String, category: String, scheduleTime: String, notes: String) {
-        if (name.isBlank()) return
+        val trimmedName = name.trim()
+        if (trimmedName.isBlank()) return
         viewModelScope.launch {
-            val task = CareTaskEntity(
-                petId = petId,
-                taskName = name.trim(),
-                category = category.trim(),
-                scheduleTime = scheduleTime.trim(),
-                notes = notes.trim(),
-                isCompleted = false
-            )
-            repository.insertTask(task)
-            _eventFlow.emit("Added task: ${task.taskName}")
+            try {
+                val task = CareTaskEntity(
+                    petId = petId,
+                    taskName = trimmedName,
+                    category = category.trim(),
+                    scheduleTime = scheduleTime.trim(),
+                    notes = notes.trim(),
+                    isCompleted = false
+                )
+                repository.insertTask(task)
+                _eventFlow.emit("Added task: ${task.taskName}")
+            } catch (e: Exception) {
+                _eventFlow.emit("Failed to add task: ${e.message}")
+            }
         }
     }
 
     fun updateTask(task: CareTaskEntity) {
         viewModelScope.launch {
-            repository.updateTask(task)
-            _eventFlow.emit("Updated task: ${task.taskName}")
+            try {
+                repository.updateTask(task)
+                _eventFlow.emit("Updated task: ${task.taskName}")
+            } catch (e: Exception) {
+                _eventFlow.emit("Failed to update task: ${e.message}")
+            }
         }
     }
 
     fun deleteTask(task: CareTaskEntity) {
         lastDeletedTask = task
         viewModelScope.launch {
-            repository.deleteTask(task)
-            _eventFlow.emit("Deleted \"${task.taskName}\"")
+            try {
+                repository.deleteTask(task)
+                _eventFlow.emit("Deleted \"${task.taskName}\"")
+            } catch (e: Exception) {
+                _eventFlow.emit("Failed to delete task: ${e.message}")
+            }
         }
     }
 
     fun undoDeleteTask() {
         val taskToRestore = lastDeletedTask ?: return
         viewModelScope.launch {
-            repository.insertTask(taskToRestore)
-            lastDeletedTask = null
-            _eventFlow.emit("Restored \"${taskToRestore.taskName}\"")
+            try {
+                repository.insertTask(taskToRestore)
+                lastDeletedTask = null
+                _eventFlow.emit("Restored \"${taskToRestore.taskName}\"")
+            } catch (e: Exception) {
+                _eventFlow.emit("Failed to restore task: ${e.message}")
+            }
         }
     }
 
     fun setTaskCompletion(taskId: Long, isCompleted: Boolean) {
         viewModelScope.launch {
-            repository.setTaskCompletion(taskId, isCompleted)
+            try {
+                repository.setTaskCompletion(taskId, isCompleted)
+            } catch (e: Exception) {
+                _eventFlow.emit("Failed to update task status: ${e.message}")
+            }
         }
     }
 
     fun toggleTaskCompletion(task: CareTaskEntity) {
         viewModelScope.launch {
-            repository.setTaskCompletion(task.taskId, !task.isCompleted)
+            try {
+                repository.setTaskCompletion(task.taskId, !task.isCompleted)
+            } catch (e: Exception) {
+                _eventFlow.emit("Failed to update task status: ${e.message}")
+            }
         }
     }
 
     // --- Shake Gesture: Reset all tasks for owner ---
     fun resetAllTasksForToday() {
+        val ownerId = _userIdFlow.value
+        if (ownerId <= 0L) return
         viewModelScope.launch {
-            val count = repository.resetAllTasksForOwner(currentUserId)
-            _eventFlow.emit("Shake detected! Reset $count checklist tasks for today.")
+            try {
+                val count = repository.resetAllTasksForOwner(ownerId)
+                _eventFlow.emit("Shake detected! Reset $count checklist tasks for today.")
+            } catch (e: Exception) {
+                _eventFlow.emit("Failed to reset tasks: ${e.message}")
+            }
         }
     }
 
@@ -168,5 +247,8 @@ class PetCareViewModel(
 
     fun logout() {
         sessionManager.logout()
+        _userIdFlow.value = -1L
+        _userNameFlow.value = ""
+        _selectedPetFilter.value = null
     }
 }

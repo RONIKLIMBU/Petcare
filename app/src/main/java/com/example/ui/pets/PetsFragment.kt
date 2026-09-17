@@ -1,10 +1,12 @@
 package com.example.ui.pets
 
+import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -62,6 +64,9 @@ class PetsFragment : Fragment() {
         binding.fabAddPet.setOnClickListener {
             showAddEditPetDialog(null)
         }
+        binding.btnAddPetEmpty.setOnClickListener {
+            showAddEditPetDialog(null)
+        }
     }
 
     private fun observeData() {
@@ -87,7 +92,9 @@ class PetsFragment : Fragment() {
 
         val speciesList = listOf("Dog", "Cat", "Bird", "Rabbit", "Hamster", "Fish", "Other")
         val speciesAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, speciesList)
-        dialogBinding.actvSpecies.setAdapter(speciesAdapter)
+        dialogBinding.actvSpecies.setSimpleItems(speciesList.toTypedArray())
+        dialogBinding.actvSpecies.setOnClickListener { dialogBinding.actvSpecies.showDropDown() }
+        dialogBinding.tilSpecies.setOnClickListener { dialogBinding.actvSpecies.showDropDown() }
 
         if (isEditing) {
             dialogBinding.etPetName.setText(petToEdit?.name)
@@ -99,33 +106,45 @@ class PetsFragment : Fragment() {
             dialogBinding.actvSpecies.setText(speciesList[0], false)
         }
 
-        MaterialAlertDialogBuilder(requireContext())
+        val dialog = MaterialAlertDialogBuilder(requireContext())
             .setView(dialogBinding.root)
-            .setPositiveButton(R.string.save) { _, _ ->
-                val name = dialogBinding.etPetName.text?.toString() ?: ""
-                val species = dialogBinding.actvSpecies.text?.toString() ?: "Dog"
-                val breed = dialogBinding.etBreed.text?.toString() ?: ""
+            .setPositiveButton(R.string.save, null)
+            .setNegativeButton(R.string.cancel, null)
+            .create()
+
+        dialog.setOnShowListener {
+            val saveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
+            saveButton.setOnClickListener {
+                val name = dialogBinding.etPetName.text?.toString()?.trim() ?: ""
+                val species = dialogBinding.actvSpecies.text?.toString()?.trim() ?: "Dog"
+                val breed = dialogBinding.etBreed.text?.toString()?.trim() ?: ""
                 val age = dialogBinding.etAge.text?.toString()?.toIntOrNull() ?: 1
                 val weight = dialogBinding.etWeight.text?.toString()?.toDoubleOrNull() ?: 5.0
 
-                if (name.isNotBlank()) {
-                    if (isEditing && petToEdit != null) {
-                        viewModel.updatePet(
-                            petToEdit.copy(
-                                name = name,
-                                species = species,
-                                breed = breed,
-                                age = age,
-                                weight = weight
-                            )
-                        )
-                    } else {
-                        viewModel.addPet(name, species, breed, age, weight)
-                    }
+                if (name.isBlank()) {
+                    dialogBinding.tilPetName.error = "Please enter pet name"
+                    return@setOnClickListener
                 }
+                dialogBinding.tilPetName.error = null
+
+                if (isEditing && petToEdit != null) {
+                    viewModel.updatePet(
+                        petToEdit.copy(
+                            name = name,
+                            species = species,
+                            breed = breed,
+                            age = age,
+                            weight = weight
+                        )
+                    )
+                } else {
+                    viewModel.addPet(name, species, breed, age, weight)
+                }
+                dialog.dismiss()
             }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
+        }
+        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        dialog.show()
     }
 
     private fun showDeletePetConfirmation(pet: PetEntity) {

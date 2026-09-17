@@ -120,6 +120,15 @@ class HomeFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
+                    viewModel.userNameFlow.collect { username ->
+                        binding.tvGreeting.text = getString(
+                            R.string.home_greeting,
+                            username.ifBlank { "Pet Lover" }
+                        )
+                    }
+                }
+
+                launch {
                     viewModel.pets.collect { pets ->
                         petChipAdapter.submitList(pets)
                         binding.tvNoPets.visibility = if (pets.isEmpty()) View.VISIBLE else View.GONE

@@ -5,7 +5,9 @@ import com.example.data.local.AppDatabase
 import com.example.data.repository.PetCareRepository
 import com.example.data.session.SessionManager
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class PetCareApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob())
@@ -19,4 +21,11 @@ class PetCareApplication : Application() {
         )
     }
     val sessionManager by lazy { SessionManager(this) }
+
+    override fun onCreate() {
+        super.onCreate()
+        applicationScope.launch(Dispatchers.IO) {
+            repository.ensureInitialData()
+        }
+    }
 }

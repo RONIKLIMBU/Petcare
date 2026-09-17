@@ -116,6 +116,15 @@
                 android:textSize="15sp"
                 android:gravity="center" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddRoutineEmpty"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/routines_add_task"
+                app:icon="@drawable/ic_add" />
+
         </LinearLayout>
 
     </LinearLayout>

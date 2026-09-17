@@ -78,6 +78,15 @@
                 android:textSize="15sp"
                 android:gravity="center" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddPetEmpty"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/pets_add_pet"
+                app:icon="@drawable/ic_add" />
+
         </LinearLayout>
 
     </LinearLayout>

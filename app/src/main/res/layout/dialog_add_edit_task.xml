@@ -23,6 +23,7 @@
 
         <!-- Task Name -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilTaskName"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -39,36 +40,47 @@
 
         <!-- Pet Dropdown Selection -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilTaskPet"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
+            app:endIconMode="dropdown_menu"
             android:hint="@string/routines_select_pet">
 
-            <AutoCompleteTextView
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/actvTaskPet"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none" />
+                android:inputType="none"
+                android:focusable="false"
+                android:cursorVisible="false"
+                android:clickable="true" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Category Dropdown -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilTaskCategory"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
+            app:endIconMode="dropdown_menu"
             android:hint="@string/routines_category">
 
-            <AutoCompleteTextView
+            <com.google.android.material.textfield.MaterialAutoCompleteTextView
                 android:id="@+id/actvTaskCategory"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none" />
+                android:inputType="none"
+                android:focusable="false"
+                android:cursorVisible="false"
+                android:clickable="true" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Schedule Time with Time Picker button -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilScheduleTime"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -88,6 +100,7 @@
 
         <!-- Notes -->
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilNotes"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
